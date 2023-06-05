@@ -1,7 +1,7 @@
 """
 Produce an optimal partition by solving an integer linear program (ILP).
 
-Programmer: Erel Segal-Halevi
+Programmer: Erel Segal-Halevi, Eitan Lichtman
 Since: 2022-02
 
 Credit: Rob Pratt, https://or.stackexchange.com/a/6115/2576
@@ -28,12 +28,8 @@ def optimal(
     :param numbins: number of bins.
     :param items: list of items.
     :param valueof: a function that maps an item from the list `items` to a number representing its value.
-    :param objective: whether to maximize the smallest sum, minimize the largest sum, etc.
-    :param outputtype: whether to return the entire partition, or just the sums, etc.
     :param copies: how many copies there are of each item. Default: 1.
     :param time_limit: stop the computation after this number of seconds have passed.
-    :param additional_constraints: a function that accepts the list of sums in ascending order, and returns a list of possible additional constraints on the sums.
-    :param weights: if given, must be of size bins.num. Divides each sum by its weight before applying the objective function.
 
     >>> from prtpy import BinnerKeepingContents, BinnerKeepingSums
     >>> optimal(BinnerKeepingSums(), 2, [11.1,11,11,11,22])
