@@ -9,7 +9,7 @@
         https://stackoverflow.com/q/51635177/827927
     explains how to have a set with a custom key.
 
-    Programmer: Erel Segal-Halevi, Eitan Lichtman
+    Programmer: Erel Segal-Halevi
 """
 import math
 from typing import List, Tuple, Callable, Iterator, Any
@@ -28,7 +28,7 @@ def anytime(
         use_lower_bound: bool = True,
         # Prune branches whose lower bound (= optimistic value) is at least as large as the current minimum.
         use_fast_lower_bound: bool = True,
-        # A faster lower bound, that does not create the branch at all. Useful for min-max and max-min objectives.
+        # A faster lower bound, that does not create the branch at all. Useful for min-max max-min and min-dist-avg objectives.
         use_heuristic_3: bool = False,
         # An improved stopping condition, applicable for min-max only. Not very useful in experiments.
         use_set_of_seen_states: bool = True,
@@ -72,6 +72,28 @@ def anytime(
     Bin #0: [27, 10], sum=37.0
     Bin #1: [39, 16, 13], sum=68.0
     Bin #2: [46, 26], sum=72.0
+
+    >>> printbins(anytime(BinnerKeepingContents(), 5, [460000000, 390000000, 270000000, 260000000, 160000000, 130000000, 100000000],[0.2,0.4,0.1,0.15,0.15], objective=obj.MinimizeDistAvg))
+    Bin #0: [390000000], sum=390000000.0
+    Bin #1: [460000000, 130000000, 100000000], sum=690000000.0
+    Bin #2: [160000000], sum=160000000.0
+    Bin #3: [260000000], sum=260000000.0
+    Bin #4: [270000000], sum=270000000.0
+
+
+    >>> printbins(anytime(BinnerKeepingContents(), 10, [115268834, 22638149, 35260669, 68111031, 13376625, 20835125, 179398684, 69888000, 94462800, 5100340, 27184906, 305371, 272847, 545681, 1680746, 763835, 763835], [0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1,0.1], objective=obj.MinimizeDistAvg))
+    Bin #0: [13376625, 5100340, 1680746, 763835, 763835, 545681, 305371, 272847], sum=22809280.0
+    Bin #1: [20835125], sum=20835125.0
+    Bin #2: [22638149], sum=22638149.0
+    Bin #3: [27184906], sum=27184906.0
+    Bin #4: [35260669], sum=35260669.0
+    Bin #5: [68111031], sum=68111031.0
+    Bin #6: [69888000], sum=69888000.0
+    Bin #7: [94462800], sum=94462800.0
+    Bin #8: [115268834], sum=115268834.0
+    Bin #9: [179398684], sum=179398684.0
+
+
     >>> printbins(anytime(BinnerKeepingContents(), 3, walter_numbers,[0.1,0.9,0], objective=obj.MinimizeDistAvg))
     Bin #0: [16], sum=16.0
     Bin #1: [46, 39, 27, 26, 13, 10], sum=161.0
@@ -151,7 +173,6 @@ def anytime(
     stack: List[Tuple[BinsArray, int]] = [first_vertex]
     if use_set_of_seen_states:
         seen_states = set(tuple(binner.sums(first_bins)))
-
     # For logging and profiling:
     complete_partitions_checked = 0
     intermediate_partitions_checked = 1
@@ -180,7 +201,6 @@ def anytime(
                     logger.info("    Solution matches global lower bound - stopping")
                     break
             continue
-
         # Heuristic 3: "If the sum of the remaining unassigned integers plus the smallest current subset sum is <= the largest subset sum, all remaining integers are assigned to the subset with the smallest sum, terminating that branch of the tree."
         # Note that this heuristic is valid only for the objective "minimize largest sum"!
         if use_heuristic_3 and objective == obj.MinimizeLargestSum:
@@ -188,14 +208,12 @@ def anytime(
                 new_bins = binner.copy_bins(current_bins)
                 for i in range(depth, numitems):
                     binner.add_item_to_bin(new_bins, sorted_items[i], 0)
-                if not relative_value:
                     binner.sort_by_ascending_sum(new_bins)
                 new_depth = numitems
                 stack.append((new_bins, new_depth))
                 logger.debug("    Heuristic 3 activated")
                 times_heuristic_3_activated += 1
                 continue
-
         next_item = sorted_items[depth]
         sum_of_remaining_items = sums_of_remaining_items[depth + 1]
 
@@ -214,7 +232,7 @@ def anytime(
             previous_bin_sum = current_bin_sum
 
             # Fast-lower-bound heuristic - before creating the new vertex.
-            # Currently implemented only for two objectives: min-max and max-min.
+            # Currently implemented only for two objectives: min-max, max-min and min-dist-avg
             if use_fast_lower_bound:
                 if objective == obj.MinimizeLargestSum:
                     # "If an assignment to a subset creates a subset sum that equals or exceeds the largest subset sum in the best complete solution found so far, that branch is pruned from the tree."
@@ -226,6 +244,16 @@ def anytime(
                     else:
                         new_smallest_sum = current_sums[0]
                     fast_lower_bound = -(new_smallest_sum + sum_of_remaining_items)
+                elif objective == obj.MinimizeDistAvg:
+                    if relative_value:
+                        fast_lower_bound = 0
+                        for i in range (numbins):
+                            fast_lower_bound = fast_lower_bound + max((current_sums[i]-(max(relative_value) * sum(items) - relative_value[i] * sum(items)))-sum(items)*relative_value[i],0)
+                    else:
+                        fast_lower_bound = 0
+                        avg = sum(items) / numbins
+                        for i in range (numbins):
+                            fast_lower_bound = fast_lower_bound + max(current_sums[i]-avg,0)
                 else:
                     fast_lower_bound = -np.inf
                 if fast_lower_bound >= best_objective_value:
@@ -233,13 +261,13 @@ def anytime(
                     continue
 
             new_bins = binner.add_item_to_bin(binner.copy_bins(current_bins), next_item, bin_index)
-            if not relative_value:
+            if(not relative_value):
                 binner.sort_by_ascending_sum(new_bins)
             new_sums = tuple(binner.sums(new_bins))
 
             # Lower-bound heuristic. 
             if use_lower_bound:
-                lower_bound = objective.lower_bound(new_sums, sum_of_remaining_items, are_sums_in_ascending_order=True)
+                lower_bound = objective.lower_bound(new_sums, sum_of_remaining_items, are_sums_in_ascending_order=False)
                 if lower_bound >= best_objective_value:
                     logger.debug("    Lower bound %f too large", lower_bound)
                     times_lower_bound_activated += 1
@@ -260,7 +288,6 @@ def anytime(
     logger.info("  Heuristics: fast lower bound = %d, lower bound = %d, seen state = %d, heuristic 3 = %d.",
                 times_fast_lower_bound_activated, times_lower_bound_activated, times_seen_state_skipped,
                 times_heuristic_3_activated)
-
     if (relative_value):
         for i in range(numbins):
             binner.remove_item_from_bin(best_bins, i, 0)
@@ -277,27 +304,26 @@ if __name__ == "__main__":
     print("{} failures, {} tests".format(failures, tests))
     if failures > 0:
         sys.exit()
-
-        # DEMO
+        DEMO
         logger.setLevel(logging.INFO)
         logger.addHandler(logging.StreamHandler())
 
-        from prtpy import BinnerKeepingContents, BinnerKeepingSums
+    from prtpy import BinnerKeepingContents, BinnerKeepingSums
 
-        anytime(BinnerKeepingContents(), 2, [4, 5, 6, 7, 8], objective=obj.MinimizeLargestSum)
+    anytime(BinnerKeepingContents(), 2, [4, 5, 6, 7, 8], objective=obj.MinimizeLargestSum)
 
-        walter_numbers = [46, 39, 27, 26, 16, 13, 10]
-        anytime(BinnerKeepingContents(), 3, walter_numbers, objective=obj.MaximizeSmallestSum)
-        anytime(BinnerKeepingContents(), 3, walter_numbers, objective=obj.MinimizeLargestSum)
+    walter_numbers = [46, 39, 27, 26, 16, 13, 10]
+    anytime(BinnerKeepingContents(), 3, walter_numbers, objective=obj.MaximizeSmallestSum)
+    anytime(BinnerKeepingContents(), 3, walter_numbers, objective=obj.MinimizeLargestSum)
 
-        random_numbers = np.random.randint(1, 2 ** 16 - 1, 15, dtype=np.int64)
-        anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MaximizeSmallestSum)
-        anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeLargestSum)
-        anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeDifference)
+    random_numbers = np.random.randint(1, 2 ** 16 - 1, 15, dtype=np.int64)
+    anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MaximizeSmallestSum)
+    anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeLargestSum)
+    anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeDifference)
 
     import pandas as pd
 
-    df = pd.read_csv('tables.csv')
+    df = pd.read_csv('mini_tables.csv')
 
     numbins = 0
     relative_values = []
@@ -305,7 +331,7 @@ if __name__ == "__main__":
     for i in range (len(df.values)):
         if (str(df.values[i][11]) != "nan"):
             numbins = numbins + 1
-            relative_values.append(float((df.values[i][11])[:-1]))
+            relative_values.append(float((df.values[i][11])[:-1])/100)
 
     for i in range(len(df.values)):
         values.append(int(df.values[i][3].replace(',', '')))
@@ -316,8 +342,8 @@ if __name__ == "__main__":
     print(values)
     print(relative_values)
 
-    #from prtpy import BinnerKeepingContents, BinnerKeepingSums, printbins
-    #printbins(anytime(BinnerKeepingContents(), numbins, values, relative_values, objective=obj.MinimizeDistAvg))
+    from prtpy import BinnerKeepingContents, BinnerKeepingSums, printbins
+    printbins(anytime(BinnerKeepingContents(), numbins, values, relative_values, objective=obj.MinimizeDistAvg))
 
     end = time.time()
     print(end - start)
