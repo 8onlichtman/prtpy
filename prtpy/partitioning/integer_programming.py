@@ -43,6 +43,9 @@ def optimal(
     >>> optimal(BinnerKeepingSums(), 2, [11,11,11,11,22], objective=obj.MaximizeSmallestSum)
     array([33., 33.])
 
+    >>> optimal(BinnerKeepingSums(), 5, [2,2,5,5,5,5,9], objective=obj.MinimizeDifference)
+    array([5., 5., 5., 9., 9.])
+
     The following examples are based on:
         Walter (2013), 'Comparing the minimum completion times of two longest-first scheduling-heuristics'.
     >>> walter_numbers = [46, 39, 27, 26, 16, 13, 10]
