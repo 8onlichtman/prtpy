@@ -22,8 +22,8 @@ def optimal(
     solver_name = mip.GRB,  # passed to MIP. See https://docs.python-mip.com/en/latest/quickstart.html#creating-models
 ):
     """
+
      Produce a partition that minimizes the sum of the positive differences from the avg, by solving an integer linear program (ILP).
-    
     :param numbins: number of bins.
     :param items: list of items.
     :param valueof: a function that maps an item from the list `items` to a number representing its value.
