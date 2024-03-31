@@ -26,7 +26,7 @@ def optimal(
     solution_filename = None,
 ):
     """
-    Produce a partition that minimizes the given objective, by solving an integer linear program (ILP).
+    Produce a partition that minimizes the sum of the positive differences from the avg, by solving an integer linear program (ILP).
 
     :param numbins: number of bins.
     :param items: list of items.
