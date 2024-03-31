@@ -12,9 +12,7 @@ from numbers import Number
 
 from prtpy import objectives as obj, outputtypes as out, Binner, printbins
 from math import inf
-import mosek
 import mip
-import gurobipy
 
 def optimal(
     binner: Binner, numbins: int, items: List[any], relative_values: List[any] = None,
@@ -22,8 +20,6 @@ def optimal(
     time_limit=inf,
     verbose=0,
     solver_name = mip.GRB,  # passed to MIP. See https://docs.python-mip.com/en/latest/quickstart.html#creating-models
-    model_filename = None,
-    solution_filename = None,
 ):
     """
     Produce a partition that minimizes the given objective, by solving an integer linear program (ILP).
@@ -57,10 +53,15 @@ def optimal(
     Bin #1: [46, 13], sum=59.0
     Bin #2: [27, 26, 10], sum=63.0
 
-    >>> printbins(optimal(BinnerKeepingContents(), 3, walter_numbers))
-    Bin #0: [39, 16], sum=55.0
-    Bin #1: [46, 13], sum=59.0
-    Bin #2: [27, 26, 10], sum=63.0
+    >>> printbins(optimal(BinnerKeepingContents(), 3, walter_numbers, [0.2, 0.5, 0.3]))
+    Bin #0: [26, 10], sum=36.0
+    Bin #1: [46, 27, 16], sum=89.0
+    Bin #2: [39, 13], sum=52.0
+
+    >>> printbins(optimal(BinnerKeepingContents(), 3, walter_numbers, [0.9, 0, 0.1]))
+    Bin #0: [46, 39, 27, 26, 13, 10], sum=161.0
+    Bin #1: [], sum=0.0
+    Bin #2: [16], sum=16.0
 
     >>> optimal(BinnerKeepingSums(), 3, walter_numbers)
     array([55., 59., 63.])
@@ -145,73 +146,3 @@ if __name__ == "__main__":
     import doctest, logging
     (failures, tests) = doctest.testmod(report=True, optionflags=doctest.FAIL_FAST)
     print("{} failures, {} tests".format(failures, tests))
-
-
-    import pandas as pd
-
-    df = pd.read_csv('tables.csv')
-
-    numbins = 0
-    relative_values = []
-    values = []
-    for i in range (len(df.values)):
-        if (str(df.values[i][11]) != "nan"):
-            numbins = numbins + 1
-            relative_values.append(float((df.values[i][11])[:-1])/100)
-            #relative_values.append(round(float((df.values[i][11])[:-1]) / 100, 4))
-
-    for i in range(len(df.values)):
-        values.append(int(df.values[i][3].replace(',', '')))
-    import time
-    start = time.time()
-
-    print(len(df.values))
-    print(len(values))
-    print(numbins)
-    print(values)
-    print(sum(values))
-    print(relative_values)
-
-    import numpy as np, numpy.random
-
-    rv = np.random.dirichlet(np.ones(5), size=1).tolist()
-    new_rv = [round(elem, 4) for elem in rv[0]]
-    print(rv[0])
-    print(sum(rv[0]))
-    print(new_rv)
-
-
-
-    count_values = dict()
-    for num in values:
-        count_values.setdefault(num, 0)
-        count_values[num] += 1
-    print(count_values)
-
-    items = list()
-    copies = list()
-    for key in count_values.keys():
-        items.append(key)
-        copies.append(count_values[key])
-
-    print(items)
-    print(copies)
-    print(len(items))
-    print(len(copies))
-
-
-    from prtpy import BinnerKeepingContents, BinnerKeepingSums
-    printbins(optimal(BinnerKeepingContents(), numbins, items=items, relative_values=relative_values, copies=copies))
-
-
-    '''sum_bins = optimal(BinnerKeepingSums(), numbins, items=items, relative_values= relative_values, copies=copies)
-    print(sum(sum_bins))
-    print(sum_bins)
-    dist_from_avg = 0
-    for i in range (len(sum_bins)):
-        dist_from_avg = dist_from_avg + max(0, (sum_bins[i] - sum(sum_bins) * relative_values[i]))
-    print(dist_from_avg)'''
-
-
-    end = time.time()
-    print(end - start);
