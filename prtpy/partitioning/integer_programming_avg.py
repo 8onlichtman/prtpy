@@ -146,3 +146,44 @@ if __name__ == "__main__":
     import doctest, logging
     (failures, tests) = doctest.testmod(report=True, optionflags=doctest.FAIL_FAST)
     print("{} failures, {} tests".format(failures, tests))
+
+    import pandas as pd
+
+    df = pd.read_csv('Ichud Vechaluka Rishon Letzion.csv')
+
+    numbins = 0
+    relative_values = []
+    values = []
+    for i in range(len(df.values)):
+        if (str(df.values[i][11]) != "nan"):
+            numbins = numbins + 1
+            relative_values.append(float((df.values[i][11])[:-1]) / 100)
+    new_relative_values = []
+    for i in range(len(relative_values)):
+        new_relative_values.append((relative_values[i]) / sum(relative_values))
+
+    for i in range(len(df.values)):
+        values.append(int(df.values[i][3].replace(',', '')))
+    import time
+
+    start = time.time()
+
+    count_values = dict()
+    for num in values:
+        count_values.setdefault(num, 0)
+        count_values[num] += 1
+    print(count_values)
+
+    items = list()
+    copies = list()
+    for key in count_values.keys():
+        items.append(key)
+        copies.append(count_values[key])
+
+
+    from prtpy import BinnerKeepingContents, BinnerKeepingSums
+
+    printbins(optimal(BinnerKeepingContents(), numbins, items=items, relative_values=relative_values, copies=copies))
+
+    end = time.time()
+    print(end - start);
