@@ -321,29 +321,30 @@ if __name__ == "__main__":
     anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeLargestSum)
     anytime(BinnerKeepingSums(), 3, random_numbers, objective=obj.MinimizeDifference)
 
-    import pandas as pd
+   import pandas as pd
 
-    df = pd.read_csv('mini_tables.csv')
+    df = pd.read_csv('Ichud Vechaluka Rishon Letzion.csv')
 
     numbins = 0
     relative_values = []
     values = []
-    for i in range (len(df.values)):
+    for i in range(len(df.values)):
         if (str(df.values[i][11]) != "nan"):
             numbins = numbins + 1
-            relative_values.append(float((df.values[i][11])[:-1])/100)
+            relative_values.append(float((df.values[i][11])[:-1]) / 100)
+    new_relative_values = []
+    for i in range(len(relative_values)):
+        new_relative_values.append((relative_values[i]) / sum(relative_values))
 
     for i in range(len(df.values)):
         values.append(int(df.values[i][3].replace(',', '')))
     import time
+
     start = time.time()
 
-    print(numbins)
-    print(values)
-    print(relative_values)
+    from prtpy import BinnerKeepingContents, BinnerKeepingSums
 
-    from prtpy import BinnerKeepingContents, BinnerKeepingSums, printbins
-    printbins(anytime(BinnerKeepingContents(), numbins, values, relative_values, objective=obj.MinimizeDistAvg))
+    printbins(anytime(BinnerKeepingContents(), numbins, values, objective=obj.MinimizeDistAvg))
 
     end = time.time()
-    print(end - start)
+    print(end - start);
