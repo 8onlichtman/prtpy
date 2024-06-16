@@ -344,7 +344,7 @@ if __name__ == "__main__":
 
     from prtpy import BinnerKeepingContents, BinnerKeepingSums
 
-    printbins(anytime(BinnerKeepingContents(), numbins, values, objective=obj.MinimizeDistAvg))
+    printbins(anytime(BinnerKeepingContents(), numbins, values, relative_value=relative_values, objective=obj.MinimizeDistAvg))
 
     end = time.time()
     print(end - start);
